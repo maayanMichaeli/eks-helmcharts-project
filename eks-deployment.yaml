@@ -1,0 +1,75 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: efs-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: fs-09511719fa8aea7e6
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: efs-pvc
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-app
+  labels:
+    run: weather-app
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    run: weather-app
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: weather-app
+  template:
+    metadata:
+      labels:
+        run: weather-app
+    spec:
+      containers:
+      - name: weather
+        image: maayanmi/weather:2.0.25
+        ports:
+        - containerPort: 5000
+        volumeMounts:
+          - name: efs-vol
+            mountPath: /data/history
+      volumes:
+        - name: efs-vol
+          persistentVolumeClaim: 
+            claimName: efs-pvc
