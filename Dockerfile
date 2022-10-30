@@ -1,6 +1,7 @@
 FROM python:3.8-alpine
 WORKDIR /data
 COPY . .
+ENV BG_COLOR='white'
 RUN /usr/local/bin/python -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 VOLUME /data/history/
